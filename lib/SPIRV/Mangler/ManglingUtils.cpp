@@ -186,7 +186,8 @@ const char *getSPIRVersionAsString(SPIRversion Version) {
 }
 
 bool isPipeBuiltin(std::string UnmangledName) {
-  return UnmangledName == "write_pipe" || UnmangledName == "read_pipe" ||
+  return UnmangledName == "write_pipe_2" || UnmangledName == "read_pipe_2" ||
+         UnmangledName == "write_pipe_4" || UnmangledName == "read_pipe_4" ||
          UnmangledName == "reserve_write_pipe" ||
          UnmangledName == "reserve_read_pipe" ||
          UnmangledName == "commit_write_pipe" ||

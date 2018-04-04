@@ -1629,8 +1629,8 @@ bool LLVMToSPIRV::transOCLKernelMetadata() {
       foreachKernelArgMD(
           KernelArgName, BF,
           [=](const std::string &Str, SPIRVFunctionParameter *BA) {
-              BM->setName(BA, Str);
-            });
+            BM->setName(BA, Str);
+          });
     }
   }
   return true;

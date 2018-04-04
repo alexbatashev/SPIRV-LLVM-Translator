@@ -256,8 +256,7 @@ void OCLTypeToSPIRV::adaptArgumentsByMetadata(Function *F) {
   auto FT = F->getFunctionType();
   auto PI = FT->param_begin();
   auto Arg = F->arg_begin();
-  for (unsigned I = 0, E = TypeMD->getNumOperands(); I != E;
-      ++I, ++PI, ++ Arg) {
+  for (unsigned I = 0, E = TypeMD->getNumOperands(); I != E; ++I, ++PI, ++Arg) {
     auto OCLTyStr = getMDOperandAsString(TypeMD, I);
     auto NewTy = *PI;
     if (OCLTyStr == OCL_TYPE_NAME_SAMPLER_T && !NewTy->isStructTy()) {

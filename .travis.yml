@@ -61,6 +61,7 @@ script:
     if [ $BUILD_EXTERNAL == "1" ]; then
       cmake .. \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DBUILD_SHARED_LIBS=ON \
         -DLLVM_BUILD_TOOLS=ON \
         -DLLVM_EXTERNAL_LIT="/usr/lib/llvm-7/build/utils/lit/lit.py" \
         -DLLVM_INCLUDE_TESTS=ON \
@@ -69,6 +70,7 @@ script:
     else
       cmake ../llvm/ \
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DBUILD_SHARED_LIBS=ON \
         -DLLVM_BUILD_TOOLS=ON \
         -DLLVM_BUILD_TESTS=ON \
         -DLLVM_INCLUDE_TESTS=ON \

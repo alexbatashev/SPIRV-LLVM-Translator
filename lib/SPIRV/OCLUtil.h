@@ -550,7 +550,7 @@ template <> inline void SPIRVMap<std::string, Op, SPIRVInstruction>::init() {
   _SPIRV_OP(get_kernel_max_sub_group_size_for_ndrange_impl,
             GetKernelNDrangeMaxSubGroupSize)
   _SPIRV_OP(get_kernel_work_group_size_impl, GetKernelWorkGroupSize)
-  _SPIRV_OP(get_kernel_preferred_work_group_multiple_impl,
+  _SPIRV_OP(get_kernel_preferred_work_group_size_multiple_impl,
             GetKernelPreferredWorkGroupSizeMultiple)
   _SPIRV_OP(retain_event, RetainEvent)
   _SPIRV_OP(release_event, ReleaseEvent)

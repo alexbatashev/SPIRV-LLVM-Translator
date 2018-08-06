@@ -1483,7 +1483,7 @@ void OCL20ToSPIRV::visitCallEnqueueKernel(CallInst *CI,
   // Local sizes arguments: Sizes of block invoke arguments
   // Clang 6.0 and higher generates local size operands as an array,
   // so we need to unpack them
-  if (DemangledName.find("_vaargs") != std::string::npos) {
+  if (DemangledName.find("_varargs") != std::string::npos) {
     const unsigned LocalSizeArrayIdx = HasEvents ? 9 : 6;
     auto *LocalSizeArray =
         cast<GetElementPtrInst>(CI->getArgOperand(LocalSizeArrayIdx));

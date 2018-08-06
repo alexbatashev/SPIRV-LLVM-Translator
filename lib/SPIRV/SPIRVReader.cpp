@@ -2085,7 +2085,7 @@ Instruction *SPIRVToLLVM::transEnqueueKernelBI(SPIRVInstruction *BI,
   auto Ops = BI->getOperands();
   bool HasVaargs = Ops.size() > 10;
 
-  std::string FName = HasVaargs ? "__enqueue_kernel_events_vaargs"
+  std::string FName = HasVaargs ? "__enqueue_kernel_events_varargs"
                                 : "__enqueue_kernel_basic_events";
   Function *F = M->getFunction(FName);
   if (!F) {
@@ -2147,7 +2147,7 @@ Instruction *SPIRVToLLVM::transWGSizeQueryBI(SPIRVInstruction *BI,
                                              BasicBlock *BB) {
   std::string FName = (BI->getOpCode() == OpGetKernelWorkGroupSize)
                           ? "__get_kernel_work_group_size_impl"
-                          : "__get_kernel_preferred_work_group_multiple_impl";
+                          : "__get_kernel_preferred_work_group_size_multiple_impl";
 
   Function *F = M->getFunction(FName);
   if (!F) {

@@ -107,3 +107,9 @@ script:
     else
       make $MAKE_TARGETS && make $MAKE_TEST_TARGET && if [ $BUILD_EXTERNAL == "1" ]; then make install; fi
     fi
+
+deploy:
+  provider: releases
+  api_key: "GITHUB OAUTH TOKEN"
+  file: "llvm-spirv"
+  skip_cleanup: true

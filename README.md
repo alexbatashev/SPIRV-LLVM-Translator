@@ -92,3 +92,9 @@ To translate between LLVM IR and SPIR-V:
     * `-spirv-debug` - output debugging information
     * `-spirv-text` - read/write SPIR-V in an internal textual format for debugging purpose. The textual format is not defined by SPIR-V spec.
     * `-help` - to see full list of options
+
+## Branching strategy
+
+Code on the master branch in this repository is intended to be compatible with master/trunk branch of the [llvm](https://github.com/llvm-mirror/llvm) project. That is for an OpenCL kernel compiled to llvm bitcode by the latest version(bulit with latests commits ) of Clang it should be possible to translate it SPIR-V with llvm-spirv tool.
+All new development should be done on the master branch.
+To have versions compatible with release versions of LLVM, corresponding branches are created. For example, to build translator with LLVM 7.0 (`release_70` branch in the llvm repo) branch `llvm_release_70` should be used.

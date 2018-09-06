@@ -1640,7 +1640,7 @@ SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     }
     if (!CI) {
       llvm::Value *Src = transValue(BC->getSource(), F, BB);
-      CI = Builder.CreateMemCpy(Dst, Align, Src, Align, Size, isVolatile);
+      CI = Builder.CreateMemCpy(Dst, Src, Size, Align, isVolatile);
     }
     if (isFuncNoUnwind())
       CI->getFunction()->addFnAttr(Attribute::NoUnwind);
@@ -2211,8 +2211,8 @@ SPIRVToLLVM::transEnqueuedBlock(SPIRVValue *SInvoke, SPIRVValue *SCaptured,
 
     // We can't make any guesses about type of captured data, so
     // let's copy it through memcpy
-    Builder.CreateMemCpy(CapturedGEPCast, LCaptAlignment->getZExtValue(),
-                         LCaptured, LCaptAlignment->getZExtValue(), LCaptSize,
+    Builder.CreateMemCpy(CapturedGEPCast, LCaptured, LCaptSize,
+                         LCaptAlignment->getZExtValue(),
                          SCaptured->isVolatile());
 
     // Fix invoke function to correctly process its first argument

@@ -177,13 +177,13 @@ convertSPIRVToLLVM() {
   }
 
   std::error_code EC;
-  ToolOutputFile Out(OutputFile.c_str(), EC, sys::fs::F_None);
+  tool_output_file Out(OutputFile.c_str(), EC, sys::fs::F_None);
   if (EC) {
     errs() << "Fails to open output file: " << EC.message();
     return -1;
   }
 
-  WriteBitcodeToFile(*M, Out.os());
+  WriteBitcodeToFile(M, Out.os());
   Out.keep();
   delete M;
   return 0;
@@ -249,13 +249,13 @@ regularizeLLVM() {
   }
 
   std::error_code EC;
-  ToolOutputFile Out(OutputFile.c_str(), EC, sys::fs::F_None);
+  tool_output_file Out(OutputFile.c_str(), EC, sys::fs::F_None);
   if (EC) {
     errs() << "Fails to open output file: " << EC.message();
     return -1;
   }
 
-  WriteBitcodeToFile(*M.get(), Out.os());
+  WriteBitcodeToFile(M.get(), Out.os());
   Out.keep();
   return 0;
 }

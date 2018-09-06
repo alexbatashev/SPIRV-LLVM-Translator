@@ -103,13 +103,13 @@ removeCast(Value *V) {
 void
 saveLLVMModule(Module *M, const std::string &OutputFile) {
   std::error_code EC;
-  ToolOutputFile Out(OutputFile.c_str(), EC, sys::fs::F_None);
+  tool_output_file Out(OutputFile.c_str(), EC, sys::fs::F_None);
   if (EC) {
     SPIRVDBG(errs() << "Fails to open output file: " << EC.message();)
     return;
   }
 
-  WriteBitcodeToFile(*M, Out.os());
+  WriteBitcodeToFile(M, Out.os());
   Out.keep();
 }
 

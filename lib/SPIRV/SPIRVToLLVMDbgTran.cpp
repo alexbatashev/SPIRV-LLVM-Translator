@@ -421,9 +421,6 @@ DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst) {
   StringRef LinkageName = getString(Ops[LinkageNameIdx]);
 
   SPIRVWord SPIRVDebugFlags = Ops[FlagsIdx];
-  bool IsDefinition = SPIRVDebugFlags & SPIRVDebug::FlagIsDefinition;
-  bool IsOptimized = SPIRVDebugFlags & SPIRVDebug::FlagIsOptimized;
-  bool IsLocal = SPIRVDebugFlags & SPIRVDebug::FlagIsLocal;
   DINode::DIFlags Flags = DINode::FlagZero;
   if (SPIRVDebugFlags & SPIRVDebug::FlagIsArtificial)
     Flags |= llvm::DINode::FlagArtificial;
@@ -444,6 +441,14 @@ DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst) {
   if (BM->isEntryPoint(spv::ExecutionModelKernel, Ops[FunctionIdIdx]))
     Flags |= llvm::DINode::FlagMainSubprogram;
 
+  llvm::DISubprogram::DISPFlags SPFlags = llvm::DISubprogram::SPFlagZero;
+  if (SPIRVDebugFlags & SPIRVDebug::FlagIsDefinition)
+    SPFlags |= llvm::DISubprogram::SPFlagDefinition;
+  if (SPIRVDebugFlags & SPIRVDebug::FlagIsOptimized)
+    SPFlags |= llvm::DISubprogram::SPFlagOptimized;
+  if (SPIRVDebugFlags & SPIRVDebug::FlagIsLocal)
+    SPFlags |= llvm::DISubprogram::SPFlagLocalToUnit;
+
   unsigned ScopeLine = Ops[ScopeLineIdx];
 
   // Function declaration descriptor
@@ -463,14 +468,13 @@ DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst) {
   llvm::DITemplateParameterArray TParamsArray = TParams.get();
 
   DISubprogram *DIS = nullptr;
-  if ((isa<DICompositeType>(Scope) || isa<DINamespace>(Scope)) && !IsDefinition)
+  if ((isa<DICompositeType>(Scope) || isa<DINamespace>(Scope)) &&
+      !(SPIRVDebugFlags & SPIRVDebug::FlagIsDefinition))
     DIS = Builder.createMethod(Scope, Name, LinkageName, File, LineNo, Ty,
-                               IsLocal, IsDefinition, 0, 0, 0, nullptr, Flags,
-                               IsOptimized, TParamsArray);
+                               0, 0, nullptr, Flags, SPFlags, TParamsArray);
   else
     DIS = Builder.createFunction(Scope, Name, LinkageName, File, LineNo, Ty,
-                                 IsLocal, IsDefinition, ScopeLine, Flags,
-                                 IsOptimized, TParamsArray, FD);
+                                 ScopeLine, Flags, SPFlags, TParamsArray, FD);
   DebugInstCache[DebugInst] = DIS;
   SPIRVId RealFuncId = Ops[FunctionIdIdx];
   FuncMap[RealFuncId] = DIS;
@@ -501,9 +505,6 @@ DINode *SPIRVToLLVMDbgTran::transFunctionDecl(const SPIRVExtInst *DebugInst) {
       transDebugInst<DISubroutineType>(BM->get<SPIRVExtInst>(Ops[TypeIdx]));
 
   SPIRVWord SPIRVDebugFlags = Ops[FlagsIdx];
-  bool IsDefinition = SPIRVDebugFlags & SPIRVDebug::FlagIsDefinition;
-  bool IsOptimized = SPIRVDebugFlags & SPIRVDebug::FlagIsOptimized;
-  bool IsLocal = SPIRVDebugFlags & SPIRVDebug::FlagIsLocal;
   DINode::DIFlags Flags = DINode::FlagZero;
   if (SPIRVDebugFlags & SPIRVDebug::FlagIsArtificial)
     Flags |= llvm::DINode::FlagArtificial;
@@ -522,14 +523,21 @@ DINode *SPIRVToLLVMDbgTran::transFunctionDecl(const SPIRVExtInst *DebugInst) {
   if (SPIRVDebugFlags & SPIRVDebug::FlagIsPrivate)
     Flags |= llvm::DINode::FlagPrivate;
 
+  llvm::DISubprogram::DISPFlags SPFlags = llvm::DISubprogram::SPFlagZero;
+  if (SPIRVDebugFlags & SPIRVDebug::FlagIsDefinition)
+    SPFlags |= llvm::DISubprogram::SPFlagDefinition;
+  if (SPIRVDebugFlags & SPIRVDebug::FlagIsOptimized)
+    SPFlags |= llvm::DISubprogram::SPFlagOptimized;
+  if (SPIRVDebugFlags & SPIRVDebug::FlagIsLocal)
+    SPFlags |= llvm::DISubprogram::SPFlagLocalToUnit;
+
   DISubprogram *DIS = nullptr;
   if (isa<DICompositeType>(Scope) || isa<DINamespace>(Scope))
     DIS = Builder.createMethod(Scope, Name, LinkageName, File, LineNo, Ty,
-                               IsLocal, IsDefinition, 0, 0, 0, nullptr, Flags,
-                               IsOptimized);
+                               0, 0, nullptr, Flags, SPFlags);
   else
     DIS = Builder.createFunction(Scope, Name, LinkageName, File, LineNo, Ty,
-                                 IsLocal, IsDefinition, 0, Flags, IsOptimized);
+                                 0, Flags, SPFlags);
   DebugInstCache[DebugInst] = DIS;
 
   return DIS;

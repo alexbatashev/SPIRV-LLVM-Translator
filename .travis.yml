@@ -82,7 +82,7 @@ script:
           -DBUILD_SHARED_LIBS=${SHARED_LIBS} \
           -DLLVM_BUILD_TOOLS=ON \
           -DLLVM_EXTERNAL_LIT="/usr/lib/llvm-7/build/utils/lit/lit.py" \
-          -DLLVM_ROOT:PATH="/usr/lib/llvm-7/" \
+          -DCMAKE_PREFIX_PATH="/usr/lib/llvm-7/" \
           -DLLVM_INCLUDE_TESTS=ON \
           -DCMAKE_INSTALL_PREFIX=../install/ \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
@@ -93,7 +93,7 @@ script:
           -DBUILD_SHARED_LIBS=${SHARED_LIBS} \
           -DLLVM_BUILD_TOOLS=ON \
           -DLLVM_EXTERNAL_LIT="/usr/lib/llvm-7/build/utils/lit/lit.py" \
-          -DLLVM_ROOT:PATH="/usr/lib/llvm-7/" \
+          -DCMAKE_PREFIX_PATH="/usr/lib/llvm-7/" \
           -DLLVM_INCLUDE_TESTS=ON \
           -DCMAKE_INSTALL_PREFIX=../install/ \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \

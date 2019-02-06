@@ -71,17 +71,17 @@ class LLVMToSPIRVDbgTran;
 
 class LLVMToSPIRV : public ModulePass {
 public:
-  LLVMToSPIRV(SPIRVModule *SMod = nullptr);
+  LLVMToSPIRV();
 
   virtual StringRef getPassName() const override { return "LLVMToSPIRV"; }
 
   bool runOnModule(Module &Mod) override;
 
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<OCLTypeToSPIRV>();
-  }
+  void print(raw_ostream &OS, const Module *M) const override;
 
   static char ID;
+
+  SPIRVModule *getSPIRVModule() const;
 
   SPIRVType *transType(Type *T);
   SPIRVType *transSPIRVOpaqueType(Type *T);
@@ -122,7 +122,7 @@ public:
 private:
   Module *M;
   LLVMContext *Ctx;
-  SPIRVModule *BM;
+  std::unique_ptr<SPIRVModule> BM;
   LLVMToSPIRVTypeMap TypeMap;
   LLVMToSPIRVValueMap ValueMap;
   SPIRVWord SrcLang;

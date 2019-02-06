@@ -124,10 +124,11 @@ struct OCLBuiltinSPIRVTransInfo {
   }
 };
 
-LLVMToSPIRV::LLVMToSPIRV(SPIRVModule *SMod)
-    : ModulePass(ID), M(nullptr), Ctx(nullptr), BM(SMod), SrcLang(0),
-      SrcLangVer(0) {
-  DbgTran = make_unique<LLVMToSPIRVDbgTran>(nullptr, SMod, this);
+LLVMToSPIRV::LLVMToSPIRV()
+  : ModulePass(ID), M(nullptr), Ctx(nullptr), SrcLang(0),
+    SrcLangVer(0) {
+    BM.reset(SPIRVModule::createSPIRVModule());
+    DbgTran = make_unique<LLVMToSPIRVDbgTran>(nullptr, BM.get(), this);
 }
 
 bool LLVMToSPIRV::runOnModule(Module &Mod) {
@@ -137,6 +138,14 @@ bool LLVMToSPIRV::runOnModule(Module &Mod) {
   assert(BM && "SPIR-V module not initialized");
   translate();
   return true;
+}
+
+void LLVMToSPIRV::print(raw_ostream &OS, const Module *M) const {
+  OS << *BM;
+}
+
+SPIRVModule *LLVMToSPIRV::getSPIRVModule() const {
+  return BM.get();
 }
 
 SPIRVValue *LLVMToSPIRV::getTranslatedValue(const Value *V) const {
@@ -476,7 +485,7 @@ SPIRVFunction *LLVMToSPIRV::transFunctionDecl(Function *F) {
   }
 
   SPIRVTypeFunction *BFT = static_cast<SPIRVTypeFunction *>(
-      transType(getAnalysis<OCLTypeToSPIRV>().getAdaptedType(F)));
+        transType(F->getFunctionType()));
   SPIRVFunction *BF =
       static_cast<SPIRVFunction *>(mapValue(F, BM->addFunction(BFT)));
   BF->setFunctionControlMask(transFunctionControlMask(F));
@@ -1668,14 +1677,13 @@ LLVMToSPIRV::transLinkageType(const GlobalValue *GV) {
 
 char LLVMToSPIRV::ID = 0;
 
-INITIALIZE_PASS_BEGIN(LLVMToSPIRV, "llvmtospv", "Translate LLVM to SPIR-V",
+INITIALIZE_PASS(LLVMToSPIRV, "llvmtospv", "Translate LLVM to SPIR-V",
                       false, false)
-INITIALIZE_PASS_DEPENDENCY(OCLTypeToSPIRV)
-INITIALIZE_PASS_END(LLVMToSPIRV, "llvmtospv", "Translate LLVM to SPIR-V", false,
-                    false)
+static RegisterPass<SPIRV::LLVMToSPIRV> TP("llvmtospv",
+                                           "Translate LLVM to SPIR-V");
 
-ModulePass *llvm::createLLVMToSPIRV(SPIRVModule *SMod) {
-  return new LLVMToSPIRV(SMod);
+ModulePass *llvm::createLLVMToSPIRV() {
+  return new LLVMToSPIRV();
 }
 
 void addPassesForSPIRV(legacy::PassManager &PassMgr) {
@@ -1694,14 +1702,15 @@ void addPassesForSPIRV(legacy::PassManager &PassMgr) {
 }
 
 bool llvm::writeSpirv(Module *M, llvm::raw_ostream &OS, std::string &ErrMsg) {
-  std::unique_ptr<SPIRVModule> BM(SPIRVModule::createSPIRVModule());
   legacy::PassManager PassMgr;
   addPassesForSPIRV(PassMgr);
   if (hasLoopUnrollMetadata(M))
     PassMgr.add(createLoopSimplifyPass());
-  PassMgr.add(createLLVMToSPIRV(BM.get()));
+  ModulePass *P = createLLVMToSPIRV();
+  PassMgr.add(P);
   PassMgr.run(*M);
 
+  SPIRVModule *BM = static_cast<LLVMToSPIRV*>(P)->getSPIRVModule();
   if (BM->getError(ErrMsg) != SPIRVEC_Success)
     return false;
   OS << *BM;

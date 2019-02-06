@@ -111,7 +111,7 @@ void mangleOpenClBuiltin(const std::string &UnmangledName,
                          ArrayRef<Type *> ArgTypes, std::string &MangledName);
 
 /// Create a pass for translating LLVM to SPIR-V.
-ModulePass *createLLVMToSPIRV(SPIRV::SPIRVModule *);
+ModulePass *createLLVMToSPIRV();
 
 /// Create a pass for translating OCL 2.0 builtin functions to equivalent
 /// OCL 1.2 builtin functions.

@@ -80,10 +80,12 @@
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/InstIterator.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 #include "llvm/PassSupport.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/Regex.h"
 
 using namespace llvm;
 
@@ -243,6 +245,105 @@ findUnusedFunctionPtrGlbs(Module &M,
   }
 }
 
+std::map<unsigned, Function*> BlockInvokeMap;
+
+static bool isBlockInvoke(Function &F) {
+  static Regex BlockInvokeRegex("_block_invoke_?[0-9]*$");
+  return BlockInvokeRegex.match(F.getName());
+}
+
+static bool enumerateBlockInvokeUsers(Module &M) {
+  bool Changed = false;
+  unsigned Id = 0;
+  for (Function &F : M) {
+    if (!isBlockInvoke(F))
+      continue;
+    BlockInvokeMap[Id] = &F;
+    Constant *ConstId = ConstantInt::getIntegerValue(
+        Type::getInt32Ty(M.getContext()), APInt(32, Id));
+    for (User *U : F.users()) {
+      if (isa<Constant>(U)) {
+        Constant *ConstIdPtr = ConstantExpr::getIntToPtr(ConstId, U->getType());
+        if (U != ConstIdPtr) {
+          U->replaceAllUsesWith(ConstIdPtr);
+          Changed = true;
+        }
+      }
+    }
+    ++Id;
+  }
+  return Changed;
+}
+
+static bool isBlockLiteralGeneric(Type *Ty) {
+  if (isa<PointerType>(Ty))
+    Ty = cast<PointerType>(Ty)->getPointerElementType();
+  if (StructType *ST = dyn_cast<StructType>(Ty))
+    if (ST->hasName() &&
+        ST->getName().equals("struct.__opencl_block_literal_generic"))
+      return true;
+  return false;
+}
+
+// TODO test with multiple block arguments and multiple calls.
+static bool fixFunctionsWithBlockArgs(Module &M) {
+  bool Changed = false;
+  const DataLayout &DL = M.getDataLayout();
+
+  for (Function &F : M) {
+    for (Argument &A : F.args()) {
+      if (!isBlockLiteralGeneric(A.getType()))
+        continue;
+      SmallVector<CallInst *, 16> IndirectCalls;
+      for (Instruction &I : instructions(&F)) {
+        if (CallInst *CI = dyn_cast<CallInst>(&I)) {
+          if (CI->isIndirectCall()) {
+            IndirectCalls.push_back(CI);
+          }
+        }
+      }
+      for (CallInst *CI : IndirectCalls) {
+        BasicBlock *BB = CI->getParent();
+        BasicBlock *Epilog = BB->splitBasicBlock(CI, "sw.default");
+
+        auto &FuncPtr = CI->getCalledOperandUse();
+        Value *V = GetUnderlyingObject(FuncPtr, DL);
+        IRBuilder<> IRB(BB->getTerminator());
+        Value *BlockId = IRB.CreatePtrToInt(V, IRB.getInt32Ty());
+        SwitchInst *SI = IRB.CreateSwitch(BlockId, Epilog);
+        BB->getTerminator()->eraseFromParent();
+
+        IRBuilder<> EB(CI);
+        PHINode *Phi = nullptr;
+        if (!CI->getType()->isVoidTy()) // TODO test with void function
+          Phi = EB.CreatePHI(CI->getType(), 10);
+
+        for (auto BI : BlockInvokeMap) {
+          // TODO Need a reliable method to match block arg and called function.
+          if (BI.second->getType() != CI->getCalledOperand()->getType())
+            continue;
+          StringRef S("case.");
+          BasicBlock *Case = BasicBlock::Create(
+              M.getContext(), S + BI.second->getName(), &F, Epilog);
+          IRBuilder<> CaseBuilder(Case);
+          SmallVector<Value *, 16> Args{CI->arg_operands()};
+          CallInst *Invoke = CaseBuilder.CreateCall(BI.second, Args);
+          CaseBuilder.CreateBr(Epilog);
+          SI->addCase(IRB.getInt32(BI.first), Case);
+          if (Phi)
+            Phi->addIncoming(Invoke, Case);
+        }
+        // Clean up
+        CI->replaceAllUsesWith(Phi);
+        CI->eraseFromParent();
+        if (FuncPtr->user_empty())
+          cast<Instruction>(FuncPtr)->eraseFromParent();
+      }
+    }
+  }
+  return Changed;
+}
+
 class SPIRVLowerOCLBlocks : public ModulePass {
 
 public:
@@ -250,6 +351,11 @@ public:
 
   bool runOnModule(Module &M) {
     bool Changed = false;
+
+    Changed |= enumerateBlockInvokeUsers(M);
+    Changed |= fixFunctionsWithBlockArgs(M);
+
+    return Changed;
 
     // 1. Find function pointer allocas and fix their users
     SmallVector<AllocaInst *, 16> FuncPtrAllocas;
